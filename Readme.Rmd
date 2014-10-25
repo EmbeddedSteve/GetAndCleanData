@@ -1,0 +1,180 @@
+---
+title: "Readme.Rmd"
+author: "Stephen D. Beckwith (embeddedsteve@gmail.com)"
+date: "October 25, 2014"
+output: html_document
+---
+
+## Getting and Cleaning Data  
+#### Coursera class (# 3 in the Data Scientist Series)
+
+### Project Assumptions
+ - The dataset has been downloaded and unpacked(unzipped) in the same folder where this script will be run.
+ - The script will check for this, if the dataset is not present, it will abort with an error message.
+ - Script **run_analysis.R** is located in this same directory/folder
+ 
+### Prerequisites
+   This script will use the *reshape2* library - please ensure this package has been properly installed in the environment.
+   
+### Data Required
+
+  The Top Level Folder for this project:  **UCI HCR Dataset**
+  The directory is shown below
+```
+stephens-mbp:UCI HAR Dataset stephen_beckwith$ ls -R
+README.txt    	features.txt		test
+activity_labels.txt	features_info.txt	train
+
+./test:
+Inertial Signals	subject_test.txt
+X_test.txt		y_test.txt
+
+./test/Inertial Signals:
+body_acc_x_test.txt	body_gyro_x_test.txt	total_acc_x_test.txt
+body_acc_y_test.txt	body_gyro_y_test.txt	total_acc_y_test.txt
+body_acc_z_test.txt	body_gyro_z_test.txt	total_acc_z_test.txt
+
+./train:
+Inertial Signals	subject_train.txt
+X_train.txt		y_train.txt
+
+./train/Inertial Signals:
+body_acc_x_train.txt	body_gyro_x_train.txt	total_acc_x_train.txt
+body_acc_y_train.txt	body_gyro_y_train.txt	total_acc_y_train.txt
+body_acc_z_train.txt	body_gyro_z_train.txt	total_acc_z_train.txt
+stephens-mbp:UCI HAR Dataset stephen_beckwith$ 
+```
+
+### Files used for this project - details
+  From the top level directory:  `activity_labels.txt`  
+  a 2 col x 6 row table of an *index* for each named *activity* monitored
+
+  From the top level directory:  `features.txt`   
+  a 2 col x 561 row table of an *index* for each *feature* in the dataset
+
+  From the top level directory:  `features_info.txt`   
+  Provides information on the 33 measurements that were made for the dataset    
+  and the 17 different calculations made, which results in the 561 **features**  
+  in the dataset we are dealing with.  
+  
+  There are 2 folders/directories:  **test** and **train**   
+  These contain the following breakdown of the 30 test subjects monitored:  
+  -  Test Subjects:  9   30%  
+  -  Train Subjects: 21  70%  
+
+  In each folder, there are 3 dataset files we are concernted with.  
+` - subject_<name>.txt:     list of subject "ids" `   
+` - X_<name>.txt:           The calculated 561 features`   
+` - Y_<name>.txt:           List of the activity (using the index #) `    
+**where:**   
+`  <name> == test or train, depending upon the folder.`   
+
+**NOTE** Data in the *Inertial Signals Folder* can be ignored, it is NOT being used for this project.
+
+### Script Details
+   The following provides an overview of the script processing, along with some details
+
+**Part 1A:**   
+ -  load the features to be used when reading in the X data to apply names to the columns    
+
+**Part 1B:**    
+ -  Read in the 3 files from the "test" directory into data frames, applying some labels as we go  
+ -  the Y and Subject data are 1 column of 2974 obs   
+ -  the X is 2974 obs of 561 variables   
+
+**Part 1C:**   
+ -  Read in the 3 files from the "train" directory into data frames, applying some labels as we go   
+ -  the Y and Subject data are 1 column of 7352 obs   
+ -  the X is 7352 obs of 561 variables   
+
+**Part 1D:**   
+ -  RBIND each of the 3 data tables together in a combined manner   
+ -  Each table is now 10299 obs of 1, 1, 561 variables for subject, y, and x respectfully   
+
+**Part 2A:**   
+ -  Create a "filter" to get only those features with "mean" and "std" in their names.  
+ -  This results in a vector of 66 entires to then filter the table with.  
+```
+ [1]   1   2   3   4   5   6  41  42  43  44  45  46  81  82  83  84  85  86 121 122 123 124 125 126 161
+[26] 162 163 164 165 166 201 202 214 215 227 228 240 241 253 254 266 267 268 269 270 271 345 346 347 348
+[51] 349 350 424 425 426 427 428 429 503 504 516 517 529 530 542 543
+```   
+
+>  ==> Comparing these columns to those with "mean(" or "std(" in their name, this is correct match    
+>  ==> DOES NOT include the meanFreq() or the Mean ones.
+
+**Part 2B:**  
+ -  Filter the X data table **ONLY** - is now 10299 obs of 66 variables only   
+ -  CBIND these 3 tables into a single combined table of 10299 obs of 68 variables  
+
+**Part 3:**   
+ -  Read in the activity_labels.txt file and apply this to the filtered table   
+```    
+> head(combFltrData)
+  subject activity tBodyAcc-mean()-X tBodyAcc-mean()-Y tBodyAcc-mean()-Z tBodyAcc-std()-X
+1       2 STANDING         0.2571778       -0.02328523       -0.01465376       -0.9384040
+2       2 STANDING         0.2860267       -0.01316336       -0.11908252       -0.9754147
+```   
+
+**Part 4:**   
+ -  Melt this data together (i.e. reshape it) to create a "linear" file of all the observations and features   
+    sorted by the subject and activity   
+ -  This becomes a table of 679734 obs of 4 variables   
+
+```
+> head (meltSumData)
+subject activity          variable     value
+1       2 STANDING tBodyAcc-mean()-X 0.2571778
+2       2 STANDING tBodyAcc-mean()-X 0.2860267
+3       2 STANDING tBodyAcc-mean()-X 0.2754848
+
+> tail(meltSumData)
+subject         activity                   variable      value
+679732      30 WALKING_UPSTAIRS fBodyBodyGyroJerkMag-std() -0.7263718
+679733      30 WALKING_UPSTAIRS fBodyBodyGyroJerkMag-std() -0.6894209
+679734      30 WALKING_UPSTAIRS fBodyBodyGyroJerkMag-std() -0.7451204
+```
+
+**Part 5:**
+ -  This then gets summarized into the final desired "tidydata.txt" file that is written to disk.   
+ -  This is a table of 180 obs of 68 variables  
+
+##### Output:
+  This was run from RStudio on Mac OS X.  Console output:    
+  
+```  
+> source('~/workSwDev/R-Language/code/Class2/Project/run_analysis.R')
+> run_analysis()
+The DataSet Exists - we may continue!
+Begin 
+Readin Test Data 
+Readin Train Data 
+Combine the Data 
+combined data:
+xData = 10299 561 
+yData = 10299 1 
+sData = 10299 1 
+Strip Features to mean & std only 
+Final Combined dataset = 10299 68 
+write out:  combFltrData.txt 
+reshpae the data 
+final tidydata table = 180 68 
+write tidydata.txt 
+[1] "Done!"
+> 
+```   
+
+#####From Terminal:  shows file creation timestamps from the above run:   
+
+```
+-rw-r--r--  1 stephen_beckwith  staff     4734 Oct 25 09:55 run_analysis.R
+-rw-r--r--  1 stephen_beckwith  staff   223654 Oct 25 09:56 tidydata.txt
+-rw-r--r--  1 stephen_beckwith  staff  8246008 Oct 25 09:56 combFltrData.txt
+```   
+
+
+
+
+
+
+
